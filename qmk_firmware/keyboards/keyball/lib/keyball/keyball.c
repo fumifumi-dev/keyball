@@ -342,10 +342,14 @@ static void rpc_set_cpi_invoke(void) {
 
 #    include "lib/oledkit/oledkit.h"
 
+static const char LOGO[] PROGMEM = "\x22\x23\x24\x25\x26\x27\x28\x29\x2A\x2B";
+
 void oledkit_render_logo_user(void) {
+    oled_write_P(LOGO, false);
 }
 
 void oledkit_render_info_user(void) {
+    oled_write_P(LOGO, false);
 }
 
 bool oled_task_user(void) {

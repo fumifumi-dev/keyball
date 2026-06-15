@@ -65,9 +65,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #endif
 
 #ifndef OLED_FONT_H
-#    define OLED_FONT_H "keyboards/keyball/lib/logofont/logofont.c"
+#    define OLED_FONT_H "keyboards/keyball/lib/logofont/logofont_fumi.c"
 #    define OLED_FONT_START 32
-#    define OLED_FONT_END 195
+#    define OLED_FONT_END 127
 #endif
 
 #if !defined(LAYER_STATE_8BIT) && !defined(LAYER_STATE_16BIT) && !defined(LAYER_STATE_32BIT)
