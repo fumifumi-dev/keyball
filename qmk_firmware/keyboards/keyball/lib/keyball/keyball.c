@@ -33,10 +33,6 @@ const uint16_t AML_TIMEOUT_MIN = 100;
 const uint16_t AML_TIMEOUT_MAX = 1000;
 const uint16_t AML_TIMEOUT_QU  = 50;   // Quantization Unit
 
-static const char BL = '\xB0'; // Blank indicator character
-static const char LFSTR_ON[] PROGMEM = "\xB2\xB3";
-static const char LFSTR_OFF[] PROGMEM = "\xB4\xB5";
-
 keyball_t keyball = {
     .this_have_ball = false,
     .that_enable    = false,
@@ -50,8 +46,6 @@ keyball_t keyball = {
 
     .scroll_mode = false,
     .scroll_div  = 0,
-
-    .pressing_keys = { BL, BL, BL, BL, BL, BL, 0 },
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -85,40 +79,6 @@ static int16_t divmod16(int16_t *v, int16_t div) {
 static inline int8_t clip2int8(int16_t v) {
     return (v) < -127 ? -127 : (v) > 127 ? 127 : (int8_t)v;
 }
-
-#ifdef OLED_ENABLE
-static const char *format_4d(int8_t d) {
-    static char buf[5] = {0}; // max width (4) + NUL (1)
-    char        lead   = ' ';
-    if (d < 0) {
-        d    = -d;
-        lead = '-';
-    }
-    buf[3] = (d % 10) + '0';
-    d /= 10;
-    if (d == 0) {
-        buf[2] = lead;
-        lead   = ' ';
-    } else {
-        buf[2] = (d % 10) + '0';
-        d /= 10;
-    }
-    if (d == 0) {
-        buf[1] = lead;
-        lead   = ' ';
-    } else {
-        buf[1] = (d % 10) + '0';
-        d /= 10;
-    }
-    buf[0] = lead;
-    return buf;
-}
-
-static char to_1x(uint8_t x) {
-    x &= 0x0f;
-    return x < 10 ? x + '0' : x + 'a' - 10;
-}
-#endif
 
 static void add_cpi(int8_t delta) {
     int16_t v = keyball_get_cpi() + delta;
@@ -379,137 +339,26 @@ static void rpc_set_cpi_invoke(void) {
 // OLED utility
 
 #ifdef OLED_ENABLE
-// clang-format off
-const char PROGMEM code_to_name[] = {
-    'a', 'b', 'c', 'd', 'e', 'f',  'g', 'h', 'i',  'j',
-    'k', 'l', 'm', 'n', 'o', 'p',  'q', 'r', 's',  't',
-    'u', 'v', 'w', 'x', 'y', 'z',  '1', '2', '3',  '4',
-    '5', '6', '7', '8', '9', '0',  'R', 'E', 'B',  'T',
-    '_', '-', '=', '[', ']', '\\', '#', ';', '\'', '`',
-    ',', '.', '/',
-};
-// clang-format on
-#endif
 
-void keyball_oled_render_ballinfo(void) {
-#ifdef OLED_ENABLE
-    // Format: `Ball:{mouse x}{mouse y}{mouse h}{mouse v}`
-    //
-    // Output example:
-    //
-    //     Ball: -12  34   0   0
+#    include "lib/oledkit/oledkit.h"
 
-    // 1st line, "Ball" label, mouse x, y, h, and v.
-    oled_write_P(PSTR("Ball\xB1"), false);
-    oled_write(format_4d(keyball.last_mouse.x), false);
-    oled_write(format_4d(keyball.last_mouse.y), false);
-    oled_write(format_4d(keyball.last_mouse.h), false);
-    oled_write(format_4d(keyball.last_mouse.v), false);
+void oledkit_render_logo_user(void) {
+}
 
-    // 2nd line, empty label and CPI
-    oled_write_P(PSTR("    \xB1\xBC\xBD"), false);
-    oled_write(format_4d(keyball_get_cpi()) + 1, false);
-    oled_write_P(PSTR("00 "), false);
+void oledkit_render_info_user(void) {
+}
 
-    // indicate scroll snap mode: "VT" (vertical), "HO" (horizontal), and "SCR" (free)
-#if 1 && KEYBALL_SCROLLSNAP_ENABLE == 2
-    switch (keyball_get_scrollsnap_mode()) {
-        case KEYBALL_SCROLLSNAP_MODE_VERTICAL:
-            oled_write_P(PSTR("VT"), false);
-            break;
-        case KEYBALL_SCROLLSNAP_MODE_HORIZONTAL:
-            oled_write_P(PSTR("HO"), false);
-            break;
-        default:
-            oled_write_P(PSTR("\xBE\xBF"), false);
-            break;
-    }
-#else
-    oled_write_P(PSTR("\xBE\xBF"), false);
-#endif
-    // indicate scroll mode: on/off
-    if (keyball.scroll_mode) {
-        oled_write_P(LFSTR_ON, false);
+bool oled_task_user(void) {
+    if (is_keyboard_master()) {
+        oledkit_render_info_user();
     } else {
-        oled_write_P(LFSTR_OFF, false);
+        oledkit_render_logo_user();
     }
-
-    // indicate scroll divider:
-    oled_write_P(PSTR(" \xC0\xC1"), false);
-    oled_write_char('0' + keyball_get_scroll_div(), false);
-#endif
+    return true;
 }
 
-void keyball_oled_render_ballsubinfo(void) {
-#ifdef OLED_ENABLE
 #endif
-}
 
-void keyball_oled_render_keyinfo(void) {
-#ifdef OLED_ENABLE
-    // Format: `Key :  R{row}  C{col} K{kc} {name}{name}{name}`
-    //
-    // Where `kc` is lower 8 bit of keycode.
-    // Where `name`s are readable labels for pressing keys, valid between 4 and 56.
-    //
-    // `row`, `col`, and `kc` indicates the last processed key,
-    // but `name`s indicate unreleased keys in best effort.
-    //
-    // It is aligned to fit with output of keyball_oled_render_ballinfo().
-    // For example:
-    //
-    //     Key :  R2  C3 K06 abc
-    //     Ball:   0   0   0   0
-
-    // "Key" Label
-    oled_write_P(PSTR("Key \xB1"), false);
-
-    // Row and column
-    oled_write_char('\xB8', false);
-    oled_write_char(to_1x(keyball.last_pos.row), false);
-    oled_write_char('\xB9', false);
-    oled_write_char(to_1x(keyball.last_pos.col), false);
-
-    // Keycode
-    oled_write_P(PSTR("\xBA\xBB"), false);
-    oled_write_char(to_1x(keyball.last_kc >> 4), false);
-    oled_write_char(to_1x(keyball.last_kc), false);
-
-    // Pressing keys
-    oled_write_P(PSTR("  "), false);
-    oled_write(keyball.pressing_keys, false);
-#endif
-}
-
-void keyball_oled_render_layerinfo(void) {
-#ifdef OLED_ENABLE
-    // Format: `Layer:{layer state}`
-    //
-    // Output example:
-    //
-    //     Layer:-23------------
-    //
-    oled_write_P(PSTR("L\xB6\xB7r\xB1"), false);
-    for (uint8_t i = 1; i < 8; i++) {
-        oled_write_char((layer_state_is(i) ? to_1x(i) : BL), false);
-    }
-    oled_write_char(' ', false);
-
-#    ifdef POINTING_DEVICE_AUTO_MOUSE_ENABLE
-    oled_write_P(PSTR("\xC2\xC3"), false);
-    if (get_auto_mouse_enable()) {
-        oled_write_P(LFSTR_ON, false);
-    } else {
-        oled_write_P(LFSTR_OFF, false);
-    }
-
-    oled_write(format_4d(get_auto_mouse_timeout() / 10) + 1, false);
-    oled_write_char('0', false);
-#    else
-    oled_write_P(PSTR("\xC2\xC3\xB4\xB5 ---"), false);
-#    endif
-#endif
-}
 
 //////////////////////////////////////////////////////////////////////////////
 // Public API functions
@@ -605,26 +454,6 @@ void housekeeping_task_kb(void) {
 }
 #endif
 
-static void pressing_keys_update(uint16_t keycode, keyrecord_t *record) {
-    // Process only valid keycodes.
-    if (keycode >= 4 && keycode < 57) {
-        char value = pgm_read_byte(code_to_name + keycode - 4);
-        char where = BL;
-        if (!record->event.pressed) {
-            // Swap `value` and `where` when releasing.
-            where = value;
-            value = BL;
-        }
-        // Rewrite the last `where` of pressing_keys to `value` .
-        for (int i = 0; i < KEYBALL_OLED_MAX_PRESSING_KEYCODES; i++) {
-            if (keyball.pressing_keys[i] == where) {
-                keyball.pressing_keys[i] = value;
-                break;
-            }
-        }
-    }
-}
-
 #ifdef POINTING_DEVICE_AUTO_MOUSE_ENABLE
 bool is_mouse_record_kb(uint16_t keycode, keyrecord_t* record) {
     switch (keycode) {
@@ -639,8 +468,6 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
     // store last keycode, row, and col for OLED
     keyball.last_kc  = keycode;
     keyball.last_pos = record->event.key;
-
-    pressing_keys_update(keycode, record);
 
     if (!process_record_user(keycode, record)) {
         return false;

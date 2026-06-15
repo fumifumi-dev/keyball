@@ -176,9 +176,6 @@ typedef struct {
     uint16_t       last_kc;
     keypos_t       last_pos;
     report_mouse_t last_mouse;
-
-    // Buffer to indicate pressing keys.
-    char pressing_keys[KEYBALL_OLED_MAX_PRESSING_KEYCODES + 1];
 } keyball_t;
 
 typedef enum {
@@ -210,19 +207,6 @@ void keyball_on_apply_motion_to_mouse_scroll(keyball_motion_t *m, report_mouse_t
 
 //////////////////////////////////////////////////////////////////////////////
 // Public API functions
-
-/// keyball_oled_render_ballinfo renders ball information to OLED.
-/// It uses just 21 columns to show the info.
-void keyball_oled_render_ballinfo(void);
-
-/// keyball_oled_render_keyinfo renders last processed key information to OLED.
-/// It shows column, row, key code, and key name (if available).
-void keyball_oled_render_keyinfo(void);
-
-/// keyball_oled_render_layerinfo renders current layer status information to
-/// OLED.  It shows layer mask with number (1~f) for active layers and '_' for
-/// inactive layers.
-void keyball_oled_render_layerinfo(void);
 
 /// keyball_get_scroll_mode gets current scroll mode.
 bool keyball_get_scroll_mode(void);
