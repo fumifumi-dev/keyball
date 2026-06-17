@@ -70,6 +70,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #    define OLED_FONT_END 127
 #endif
 
+#ifdef OLED_ENABLE
+#    define OLED_TIMEOUT 0
+#    ifndef KEYBALL_OLED_TIMEOUT
+#    define KEYBALL_OLED_TIMEOUT 60000
+#    endif
+#endif
+
 #if !defined(LAYER_STATE_8BIT) && !defined(LAYER_STATE_16BIT) && !defined(LAYER_STATE_32BIT)
 #    define LAYER_STATE_8BIT
 #endif

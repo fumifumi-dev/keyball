@@ -46,6 +46,13 @@ keyball_t keyball = {
 
     .scroll_mode = false,
     .scroll_div  = 0,
+
+#ifdef OLED_ENABLE
+#   if KEYBALL_OLED_TIMEOUT > 0
+    .oled_timeout = KEYBALL_OLED_TIMEOUT,
+#   endif
+    .oled_disable = false,
+#endif
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -340,24 +347,66 @@ static void rpc_set_cpi_invoke(void) {
 
 #ifdef OLED_ENABLE
 
-#    include "lib/oledkit/oledkit.h"
+#include "lib/oledkit/oledkit.h"
 
+static const char BL = '\x3A';
 static const char LOGO[] PROGMEM = "\x22\x23\x24\x25\x26\x27\x28\x29\x2A\x2B";
-
-void oledkit_render_logo_user(void) {
-    oled_write_P(LOGO, false);
-}
-
-void oledkit_render_info_user(void) {
-    oled_write_P(LOGO, false);
-}
+static const char CL_LINE[] PROGMEM = "     ";
 
 bool oled_task_user(void) {
-    if (is_keyboard_master()) {
-        oledkit_render_info_user();
+    bool prop_lay = layer_state_is(5);
+#   if KEYBALL_OLED_TIMEOUT > 0
+    if (prop_lay) {
+        oled_on();
     } else {
-        oledkit_render_logo_user();
+        if (is_oled_on()) {
+            if (timer_expired32(timer_read32(), keyball.oled_timeout)) {
+                oled_off();
+                return true;
+            }
+        } else {
+            if (
+                keyball_get_oled_disable() ||
+                timer_expired32(keyball.oled_timeout, last_input_activity_time())
+            ) {
+                return true;
+            }
+            oled_on();
+        }
+        if (!keyball_get_oled_disable()) {
+            uint32_t next = last_input_activity_time() + KEYBALL_OLED_TIMEOUT;
+            if (timer_expired32(next, keyball.oled_timeout)) keyball.oled_timeout = next;
+        }
     }
+#   endif
+
+    //----------
+    oled_write_P(LOGO, false);
+
+    //----------
+    if (is_keyboard_master()) {
+        for (uint8_t i = 1; i < 6; i++) {
+            oled_write_char((layer_state & (1 << i)) ? '0' + i : BL, false);
+        }
+    } else {
+        oled_write_P(CL_LINE,false);
+    }
+
+    //----------
+    if (is_keyboard_left()) {
+    } else {
+    }
+
+    //----------
+    if (is_keyboard_master()) {
+        if (prop_lay) {
+
+        } else {
+
+        }
+    } else {
+    }
+
     return true;
 }
 
@@ -415,6 +464,22 @@ void keyball_set_cpi(uint8_t cpi) {
     }
 }
 
+#ifdef OLED_ENABLE
+bool keyball_get_oled_disable(void) {
+    return keyball.oled_disable;
+}
+void keyball_set_oled_disable(bool flg) {
+    if (flg) {
+        oled_off();
+        keyball.oled_timeout = last_input_activity_time();
+    } else {
+        oled_on();
+        keyball.oled_timeout = timer_read32() + KEYBALL_OLED_TIMEOUT;
+    }
+    keyball.oled_disable = flg;
+}
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // Keyboard hooks
 
@@ -433,6 +498,9 @@ void keyboard_post_init_kb(void) {
         keyball_config_t c = {.raw = eeconfig_read_kb()};
         keyball_set_cpi(c.cpi);
         keyball_set_scroll_div(c.sdiv);
+#ifdef OLED_ENABLE
+        keyball_set_oled_disable(c.oledd);
+#endif
 #ifdef POINTING_DEVICE_AUTO_MOUSE_ENABLE
         set_auto_mouse_enable(c.amle);
         set_auto_mouse_timeout(c.amlto == 0 ? AUTO_MOUSE_TIME : (c.amlto + 1) * AML_TIMEOUT_QU);
@@ -516,6 +584,9 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
                 keyball_config_t c = {
                     .cpi   = keyball.cpi_value,
                     .sdiv  = keyball.scroll_div,
+#ifdef OLED_ENABLE
+                    .oledd = keyball.oled_disable,
+#endif
 #ifdef POINTING_DEVICE_AUTO_MOUSE_ENABLE
                     .amle  = get_auto_mouse_enable(),
                     .amlto = (get_auto_mouse_timeout() / AML_TIMEOUT_QU) - 1,
@@ -549,6 +620,18 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
             case SCRL_DVD:
                 add_scroll_div(-1);
                 break;
+
+#ifdef OLED_ENABLE
+            case OLED_TO:
+                keyball_set_oled_disable(!keyball_get_oled_disable());
+                break;
+            case OLED_ON:
+                keyball_set_oled_disable(false);
+                break;
+            case OLED_OFF:
+                keyball_set_oled_disable(true);
+                break;
+#endif
 
 #if KEYBALL_SCROLLSNAP_ENABLE == 2
             case SSNP_HOR:

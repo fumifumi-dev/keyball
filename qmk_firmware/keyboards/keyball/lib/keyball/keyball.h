@@ -115,6 +115,10 @@ enum keyball_keycodes {
     AML_I50  = QK_KB_11, // Increment automatic mouse layer timeout
     AML_D50  = QK_KB_12, // Decrement automatic mouse layer timeout
 
+    OLED_TO = QK_KB_16,
+    OLED_ON = QK_KB_17,
+    OLED_OFF = QK_KB_18,
+
     // User customizable 32 keycodes.
     KEYBALL_SAFE_RANGE = QK_USER_0,
 };
@@ -124,6 +128,9 @@ typedef union {
     struct {
         uint8_t cpi : 7;
         uint8_t sdiv : 3;  // scroll divider
+#ifdef OLED_ENABLE
+        uint8_t oledd : 1; // oled disable
+#endif
 #ifdef POINTING_DEVICE_AUTO_MOUSE_ENABLE
         uint8_t amle : 1;  // automatic mouse layer enabled
         uint16_t amlto : 5; // automatic mouse layer timeout
@@ -165,6 +172,13 @@ typedef struct {
     bool     scroll_mode;
     uint32_t scroll_mode_changed;
     uint8_t  scroll_div;
+
+#ifdef OLED_ENABLE
+#   if KEYBALL_OLED_TIMEOUT > 0
+    uint32_t oled_timeout;
+#   endif
+    bool oled_disable;
+#endif
 
 #if KEYBALL_SCROLLSNAP_ENABLE == 1
     uint32_t scroll_snap_last;
@@ -254,3 +268,8 @@ uint8_t keyball_get_cpi(void);
 /// In addition, if you do not upload SROM, the maximum value will be limited
 /// to 35 (3500CPI).
 void keyball_set_cpi(uint8_t cpi);
+
+#ifdef OLED_ENABLE
+bool keyball_get_oled_disable(void);
+void keyball_set_oled_disable(bool flg);
+#endif
