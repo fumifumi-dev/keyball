@@ -128,6 +128,20 @@ layer_state_t layer_state_set_user(layer_state_t state) {
     return state;
 }
 
+
+#ifdef OLED_ENABLE
+bool keyball_oledkit_active_user(void) {
+    uint8_t layer = get_highest_layer(layer_state);
+    return layer == 2 || layer == 5;
+}
+
+void keyball_oledkit_render(bool master, bool left) {
+    keyball_oledkit_logo();
+    keyball_oledkit_layer(master);
+    keyball_oledkit_keypress(master, left);
+}
+#endif
+
 #ifdef TAP_DANCE_ENABLE
 typedef struct {
     bool is_press_action;

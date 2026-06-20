@@ -272,4 +272,11 @@ void keyball_set_cpi(uint8_t cpi);
 #ifdef OLED_ENABLE
 bool keyball_get_oled_disable(void);
 void keyball_set_oled_disable(bool flg);
+
+void keyball_oledkit_logo(void);
+void keyball_oledkit_layer(bool master);
+void keyball_oledkit_keypress(bool master, bool left);
+
+bool keyball_oledkit_active_user(void);
+void keyball_oledkit_render(bool master, bool left);
 #endif
