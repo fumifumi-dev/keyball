@@ -112,12 +112,12 @@ enum keyball_keycodes {
     // Auto mouse layer control keycodes.
     // Only works when POINTING_DEVICE_AUTO_MOUSE_ENABLE is defined.
     AML_TO   = QK_KB_10, // Toggle automatic mouse layer
-    AML_I50  = QK_KB_11, // Increment automatic mouse layer timeout
-    AML_D50  = QK_KB_12, // Decrement automatic mouse layer timeout
+    AML_I1S  = QK_KB_11, // Increment automatic mouse layer timeout
+    AML_D1S  = QK_KB_12, // Decrement automatic mouse layer timeout
+    AML_KI50 = QK_KB_17,
+    AML_KD50 = QK_KB_18,
 
     OLED_TO = QK_KB_16,
-    OLED_ON = QK_KB_17,
-    OLED_OFF = QK_KB_18,
 
     // User customizable 32 keycodes.
     KEYBALL_SAFE_RANGE = QK_USER_0,

@@ -36,4 +36,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define TAP_CODE_DELAY 5
 
 #define POINTING_DEVICE_AUTO_MOUSE_ENABLE
-#define AUTO_MOUSE_DEFAULT_LAYER 1
+#define AUTO_MOUSE_DEFAULT_LAYER 4
+#define AUTO_MOUSE_LAYER_KEEP_TIME 30000
+
+#define DYNAMIC_KEYMAP_LAYER_COUNT 6
+
+#ifdef COMBO_ENABLE
+#define COMBO_TERM 180
+#endif
+
+#define QUICK_TAP_TERM 120
+
+#ifdef CAPS_WORD_ENABLE
+#undef BOTH_SHIFTS_TURNS_ON_CAPS_WOR
+#define CAPS_WORD_IDLE_TIMEOUT 5000
+#endif
+
+#define KEYBALL_SCROLLSNAP_ENABLE 0
