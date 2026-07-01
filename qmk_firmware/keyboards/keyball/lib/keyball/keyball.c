@@ -16,6 +16,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <stdbool.h>
+#include <stdint.h>
 #include "oled_driver.h"
 #include "quantum.h"
 #ifdef SPLIT_KEYBOARD
@@ -52,9 +53,6 @@ keyball_t keyball = {
     .scroll_div  = 0,
 
 #ifdef OLED_ENABLE
-#   if KEYBALL_OLED_TIMEOUT > 0
-    .oled_timeout = KEYBALL_OLED_TIMEOUT,
-#   endif
     .oled_disable = false,
 #endif
 };
@@ -363,51 +361,6 @@ __attribute__((weak)) bool keyball_oledkit_active_user(void) {
     return false;
 }
 
-bool keyball_oledkit_active_kb(bool master) {
-    bool oled_on_state = is_oled_on();
-
-    if (master) {
-        if (keyball_oledkit_active_user()) {
-            if (!oled_on_state) {
-                oled_on();
-                oled_on_state = true;
-            }
-        } else {
-#   if KEYBALL_OLED_TIMEOUT > 0
-            uint32_t now = timer_read32();
-            if (oled_on_state) {
-                if (timer_expired32(now, keyball.oled_timeout)) {
-                    oled_off();
-                    oled_on_state = false;
-                }
-            } else {
-                if (!keyball_get_oled_disable() && !timer_expired32(keyball.oled_timeout, last_input_activity_time())) {
-                    oled_on();
-                    oled_on_state = true;
-                }
-            }
-            if (!keyball_get_oled_disable()) {
-                uint32_t next = last_input_activity_time() + KEYBALL_OLED_TIMEOUT;
-                if (timer_expired32(next, keyball.oled_timeout)) keyball.oled_timeout = next;
-            }
-#   else
-            if (keyball_get_oled_disable()) {
-                if (oled_on_state) {
-                    oled_off();
-                    oled_on_state = false;
-                }
-            } else {
-                if (!oled_on_state) {
-                    oled_on();
-                    oled_on_state = true;
-                }
-            }
-#   endif
-        }
-    }
-    return oled_on_state;
-}
-
 void keyball_oledkit_logo(void) {
     oled_write_P(LOGO, false);
 }
@@ -457,11 +410,8 @@ __attribute__((weak)) void keyball_oledkit_render(bool master, bool left) {
 }
 
 bool oled_task_kb(void) {
-    bool master = is_keyboard_master();
-    if (!keyball_oledkit_active_kb(master)) {
-        return true;
-    }
-    keyball_oledkit_render(master, is_keyboard_left());
+    if (!is_oled_on()) return true;
+    keyball_oledkit_render(is_keyboard_master(), is_keyboard_left());
     return oled_task_user();
 }
 
@@ -524,13 +474,6 @@ bool keyball_get_oled_disable(void) {
     return keyball.oled_disable;
 }
 void keyball_set_oled_disable(bool flg) {
-#if KEYBALL_OLED_TIMEOUT > 0
-    if (flg) {
-        keyball.oled_timeout = last_input_activity_time();
-    } else {
-        keyball.oled_timeout = timer_read32() + KEYBALL_OLED_TIMEOUT;
-    }
-#endif
     keyball.oled_disable = flg;
 }
 #endif
@@ -750,6 +693,36 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
     }
 
     return true;
+}
+
+void matrix_scan_kb(void) {
+#ifdef OLED_ENABLE
+    bool oled_stat = false;
+#if KEYBALL_OLED_TIMEOUT > 0
+    uint32_t now = timer_read32();
+#endif
+    if (keyball_oledkit_active_user()) {
+        oled_stat = true;
+#if KEYBALL_OLED_TIMEOUT > 0
+        if (timer_expired32(now, last_input_activity_time() + KEYBALL_OLED_TIMEOUT / 4)) {
+            layer_off(5);
+        }
+#endif
+    } else if (
+        !keyball_get_oled_disable()
+#if KEYBALL_OLED_TIMEOUT > 0
+        && timer_expired32(last_input_activity_time() + KEYBALL_OLED_TIMEOUT, now)
+#endif
+    ) {
+        oled_stat = true;
+    }
+    if (is_oled_on()) {
+        if (!oled_stat) oled_off();
+    } else {
+        if (oled_stat) oled_on();
+    }
+#endif
+    return matrix_scan_user();
 }
 
 // Disable functions keycode_config() and mod_config() in keycode_config.c to

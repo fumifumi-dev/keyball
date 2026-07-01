@@ -174,9 +174,6 @@ typedef struct {
     uint8_t  scroll_div;
 
 #ifdef OLED_ENABLE
-#   if KEYBALL_OLED_TIMEOUT > 0
-    uint32_t oled_timeout;
-#   endif
     bool oled_disable;
 #endif
 

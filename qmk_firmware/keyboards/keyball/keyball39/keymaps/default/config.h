@@ -33,19 +33,28 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #    define RGBLIGHT_EFFECT_TWINKLE
 #endif
 
+#define LY_MAIN 0
+#define LY_SYMBOL 1
+#define LY_MOUSE 2
+#define LY_MOUSE_ST 3
+#define LY_FN 4
+#define LY_EEPROM 5
+
 #define TAP_CODE_DELAY 5
 
 #define POINTING_DEVICE_AUTO_MOUSE_ENABLE
-#define AUTO_MOUSE_DEFAULT_LAYER 4
+#define AUTO_MOUSE_DEFAULT_LAYER LY_MOUSE
 #define AUTO_MOUSE_LAYER_KEEP_TIME 30000
 
 #define DYNAMIC_KEYMAP_LAYER_COUNT 6
 
 #ifdef COMBO_ENABLE
-#define COMBO_TERM 180
+#define COMBO_SHOULD_TRIGGER
+#define COMBO_TERM 40
 #endif
 
-#define QUICK_TAP_TERM 120
+#define TAPPING_TERM 200
+#define QUICK_TAP_TERM 180
 
 #ifdef CAPS_WORD_ENABLE
 #undef BOTH_SHIFTS_TURNS_ON_CAPS_WOR
