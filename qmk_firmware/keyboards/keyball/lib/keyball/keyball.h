@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //////////////////////////////////////////////////////////////////////////////
 // Configurations
 
+#include <stdint.h>
 #ifndef KEYBALL_CPI_DEFAULT
 #    define KEYBALL_CPI_DEFAULT 500
 #endif
@@ -134,6 +135,7 @@ typedef union {
 #ifdef POINTING_DEVICE_AUTO_MOUSE_ENABLE
         uint8_t amle : 1;  // automatic mouse layer enabled
         uint16_t amlto : 5; // automatic mouse layer timeout
+        uint16_t amlato : 5; // automatic mouse layer timeout
 #endif
 #if KEYBALL_SCROLLSNAP_ENABLE == 2
         uint8_t ssnap : 2; // scroll snap mode
@@ -177,6 +179,11 @@ typedef struct {
     bool oled_disable;
 #endif
 
+#ifdef POINTING_DEVICE_AUTO_MOUSE_ENABLE
+    uint16_t aml_timeout;
+    uint16_t aml_active_timeout;
+#endif
+
 #if KEYBALL_SCROLLSNAP_ENABLE == 1
     uint32_t scroll_snap_last;
     int8_t   scroll_snap_tension_h;
@@ -184,8 +191,6 @@ typedef struct {
     keyball_scrollsnap_mode_t scrollsnap_mode;
 #endif
 
-    uint16_t       last_kc;
-    keypos_t       last_pos;
     report_mouse_t last_mouse;
 } keyball_t;
 
@@ -276,4 +281,20 @@ void keyball_oledkit_keypress(bool master, bool left);
 
 bool keyball_oledkit_active_user(void);
 void keyball_oledkit_render(bool master, bool left);
+#endif
+
+#ifdef POINTING_DEVICE_AUTO_MOUSE_ENABLE
+#ifndef AUTO_MOUSE_ACTIVE_TIME
+#   define AUTO_MOUSE_ACTIVE_TIME 10000
+#endif
+uint16_t keyball_get_auto_mouse_timeout(void);
+uint16_t keyball_get_auto_mouse_active_timeout(void);
+void keyball_inc_auto_mouse_timeout(void);
+void keyball_inc_auto_mouse_active_timeout(void);
+void keyball_dec_auto_mouse_timeout(void);
+void keyball_dec_auto_mouse_active_timeout(void);
+uint16_t keyball_get_aml_to_eeprom(void);
+uint16_t keyball_get_aml_ato_eeprom(void);
+void keyball_set_aml_to_eeprom(uint16_t time);
+void keyball_set_aml_ato_eeprom(uint16_t time);
 #endif
