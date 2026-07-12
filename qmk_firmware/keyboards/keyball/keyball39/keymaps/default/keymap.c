@@ -16,8 +16,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "keycodes.h"
-#include "modifiers.h"
 #include QMK_KEYBOARD_H
 
 #include "quantum.h"
@@ -46,8 +44,8 @@ enum {
     CM_KANA,
 };
 
-const uint16_t PROGMEM P_CM_MSST[] = {CW_TOGG, KC_LGUI, COMBO_END};
-const uint16_t PROGMEM P_CM_EEPR[] = {CW_TOGG, KC_LALT, COMBO_END};
+const uint16_t PROGMEM P_CM_MSST[] = {KC_ESC, KC_LGUI, COMBO_END};
+const uint16_t PROGMEM P_CM_EEPR[] = {KC_ESC, KC_LALT, COMBO_END};
 const uint16_t PROGMEM P_CM_LPRN[] = {JP_7, JP_8, COMBO_END};
 const uint16_t PROGMEM P_CM_RPRN[] = {JP_8, JP_9, COMBO_END};
 const uint16_t PROGMEM P_CM_LBRC[] = {JP_4, JP_5, COMBO_END};
@@ -131,8 +129,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   ),
 
   [LY_SYMBOL] = LAYOUT_universal(
-    JP_EXLM  , JP_QUES  , JP_EQL   , JP_QUOT  , JP_TILD  ,                            KC_PSCR  , JP_7     , JP_8     , JP_9     , JP_ASTR  ,
-    JP_AMPR  , JP_HASH  , JP_DLR   , JP_DQUO  , JP_GRV   ,                            JP_YEN   , JP_4     , JP_5     , JP_6     , JP_PLUS  ,
+    JP_EXLM  , JP_QUES  , JP_EQL   , JP_QUOT  , JP_TILD  ,                            KC_PSCR  , JP_7     , JP_8     , JP_9     , JP_PLUS  ,
+    JP_AMPR  , JP_HASH  , JP_DLR   , JP_DQUO  , JP_GRV   ,                            JP_YEN   , JP_4     , JP_5     , JP_6     , JP_ASTR  ,
     JP_AT    , JP_PERC  , JP_CIRC  , JP_PIPE  , JP_BSLS  ,                            XXXXXXX  , JP_1     , JP_2     , JP_3     , JP_SLSH  ,
     CW_TOGG  , _______  , _______  , _______  , _______  , _______  ,      _______  ,  JP_0    , _______  , _______  , _______  , _______
   ),
@@ -161,7 +159,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   [LY_EEPROM] = LAYOUT_universal(
     XXXXXXX  , XXXXXXX  , XXXXXXX  , XXXXXXX  , QK_BOOT  ,                            QK_BOOT  , AML_TO   , XXXXXXX  , XXXXXXX  , OLED_TO  ,
     XXXXXXX  , XXXXXXX  , XXXXXXX  , XXXXXXX  , XXXXXXX  ,                            CPI_I100 , AML_I1S  , AML_KI50 , XXXXXXX  , SCRL_DVD ,
-    XXXXXXX  , XXXXXXX  , XXXXXXX  , XXXXXXX  , XXXXXXX  ,                            CPI_D100 , AML_D1S  , AML_KI50 , XXXXXXX  , SCRL_DVI ,
+    XXXXXXX  , XXXXXXX  , XXXXXXX  , XXXXXXX  , XXXXXXX  ,                            CPI_D100 , AML_D1S  , AML_KD50 , XXXXXXX  , SCRL_DVI ,
     TO(0)    , XXXXXXX  , XXXXXXX  , XXXXXXX  , KBC_RST  , KBC_SAVE ,      KBC_SAVE , KBC_RST  , _______  , _______  , _______  , TO(0)
   ),
 };
@@ -176,39 +174,47 @@ layer_state_t layer_state_set_user(layer_state_t state) {
 
 #ifdef COMBO_SHOULD_TRIGGER
 bool combo_should_trigger(uint16_t combo_index, combo_t *combo, uint16_t keycode, keyrecord_t *record) {
-    bool bret = true;
     uint8_t layer = get_highest_layer(layer_state);
     switch (combo_index) {
-        case CM_MSST ... CM_EEPR:
-            bret = layer != LY_MAIN;
-            break;
-        case CM_LPRN ... CM_RCBR:
-            bret = layer != LY_SYMBOL;
-            break;
-        case CM_MB3:
-            bret = layer != LY_MOUSE && layer !=  LY_MOUSE_ST;
-            break;
-        case CM_F11 ... CM_KANA:
-            bret = layer != LY_FN;
-            break;
+        case CM_MSST ... CM_EEPR: return layer == LY_MAIN;
+        case CM_LPRN ... CM_RCBR: return layer == LY_SYMBOL;
+        case CM_MB3:              return layer == LY_MOUSE || layer == LY_MOUSE_ST;
+        case CM_F11 ... CM_KANA:  return layer == LY_FN;
     }
-    return bret;
+    return false;
 }
 #endif
 
 #ifdef OLED_ENABLE
-bool keyball_oledkit_active_user() {
-    uint8_t layer = get_highest_layer(layer_state);
-    if (layer == LY_EEPROM) {
-        return true;
-    }
-    return false;
-}
-
-void keyball_oledkit_render(bool master, bool left) {
+    void keyball_oledkit_render(bool master, bool left) {
     keyball_oledkit_logo();
     keyball_oledkit_layer(master);
-    keyball_oledkit_keypress(master, left);
+    keyball_oledkit_keypress(left);
+
+    uint8_t bl = 45;
+    if (master) {
+        switch (get_highest_layer(layer_state)) {
+            case LY_MAIN:
+            case LY_SYMBOL:
+                keyball_oledkit_state();
+                bl = 35;
+                break;
+            case LY_MOUSE:
+            case LY_MOUSE_ST:
+                keyball_oledkit_mouse();
+                bl = 30;
+                break;
+            case LY_FN:
+                keyball_oledkit_scroll();
+                bl = 30;
+                break;
+            case LY_EEPROM:
+                keyball_oledkit_eeprom();
+                bl = 10;
+                break;
+        }
+    }
+    keyball_oledkit_blankchar(bl);
 }
 #endif
 
@@ -247,7 +253,7 @@ void l1btn1_finished(tap_dance_state_t *state, void *user_data) {
 void l1btn1_reset(tap_dance_state_t *state, void *user_data) {
     switch (l1btn1_state.state) {
         case SINGLE_TAP: unregister_code(JP_MHEN); break;
-        case SINGLE_HOLD: layer_off(LY_FN); break;
+        case SINGLE_HOLD: layer_off(LY_SYMBOL); break;
         case DOUBLE_TAP: unregister_code(JP_HENK); break;
     }
     l1btn1_state.state = 0;

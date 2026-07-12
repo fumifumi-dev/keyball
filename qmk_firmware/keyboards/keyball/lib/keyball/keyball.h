@@ -177,6 +177,7 @@ typedef struct {
 
 #ifdef OLED_ENABLE
     bool oled_disable;
+    bool oled_state;
 #endif
 
 #ifdef POINTING_DEVICE_AUTO_MOUSE_ENABLE
@@ -276,10 +277,14 @@ bool keyball_get_oled_disable(void);
 void keyball_set_oled_disable(bool flg);
 
 void keyball_oledkit_logo(void);
+void keyball_oledkit_blankchar(uint8_t ch);
 void keyball_oledkit_layer(bool master);
-void keyball_oledkit_keypress(bool master, bool left);
+void keyball_oledkit_keypress(bool left);
+void keyball_oledkit_state(void);
+void keyball_oledkit_scroll(void);
+void keyball_oledkit_mouse(void);
+void keyball_oledkit_eeprom(void);
 
-bool keyball_oledkit_active_user(void);
 void keyball_oledkit_render(bool master, bool left);
 #endif
 
