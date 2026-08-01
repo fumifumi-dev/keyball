@@ -33,9 +33,9 @@ const uint8_t CPI_MAX        = pmw3360_MAXCPI + 1;
 const uint8_t SCROLL_DIV_MAX = 7;
 
 #ifdef POINTING_DEVICE_AUTO_MOUSE_ENABLE
-const uint16_t AML_TIMEOUT_MIN = 100;
-const uint16_t AML_TIMEOUT_MAX = 1000;
-const uint16_t AML_TIMEOUT_QU = 50;
+const uint16_t AML_TIMEOUT_MIN = 600;
+const uint16_t AML_TIMEOUT_MAX = 10000;
+const uint16_t AML_TIMEOUT_QU = 200;
 
 const uint16_t AML_ACTIVE_TIMEOUT_MIN = 1000;
 const uint16_t AML_ACTIVE_TIMEOUT_MAX = 30000;

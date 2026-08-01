@@ -52,7 +52,7 @@ const uint16_t PROGMEM P_CM_LBRC[] = {JP_4, JP_5, COMBO_END};
 const uint16_t PROGMEM P_CM_RBRC[] = {JP_5, JP_6, COMBO_END};
 const uint16_t PROGMEM P_CM_LCBR[] = {JP_1, JP_2, COMBO_END};
 const uint16_t PROGMEM P_CM_RCBR[] = {JP_2, JP_3, COMBO_END};
-const uint16_t PROGMEM P_CM_MB3[]  = {KC_BTN2, KC_WH_D, COMBO_END};
+const uint16_t PROGMEM P_CM_MB3[]  = {KC_BTN1, KC_BTN2, COMBO_END};
 const uint16_t PROGMEM P_CM_F11[]  = {KC_F8, KC_F9, COMBO_END};
 const uint16_t PROGMEM P_CM_F12[]  = {KC_F9, KC_F10, COMBO_END};
 const uint16_t PROGMEM P_CM_GRAV[] = {KC_F1, KC_F2, COMBO_END};
@@ -134,8 +134,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   ),
 
   [LY_MOUSE] = LAYOUT_universal(
-    _______  , _______  , _______  , _______  , _______  ,                            _______  , _______  , KC_WH_U  , _______  , _______  ,
-    _______  , _______  , _______  , _______  , _______  ,                            _______  , KC_BTN1  , KC_WH_D , KC_BTN2  , _______  ,
+    _______  , _______  , _______  , _______  , _______  ,                            _______  , _______  , _______  , _______  , _______  ,
+    _______  , _______  , _______  , _______  , _______  ,                            _______  , KC_BTN1  , _______ , KC_BTN2  , _______  ,
     _______  , _______  , _______  , _______  , _______  ,                            _______  , _______  , _______  , _______  , _______  ,
     _______  , _______  , _______  , _______  , _______  , _______  ,      _______  , _______  , _______  , _______  , _______  , _______
   ),
