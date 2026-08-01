@@ -101,16 +101,21 @@ const key_override_t **key_overrides = (const key_override_t *[]){
 #ifdef TAP_DANCE_ENABLE
 enum {
     TD_L1_BTN1 = 0,
+    TD_L1_BTN1_MS
 };
 void l1btn1_finished(tap_dance_state_t *state, void *user_data);
 void l1btn1_reset(tap_dance_state_t *state, void *user_data);
+void l1btn1_ms_finished(tap_dance_state_t *state, void *user_data);
+void l1btn1_ms_reset(tap_dance_state_t *state, void *user_data);
 tap_dance_action_t tap_dance_actions[] = {
-    [TD_L1_BTN1] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, l1btn1_finished, l1btn1_reset),
+    [TD_L1_BTN1]    = ACTION_TAP_DANCE_FN_ADVANCED(NULL, l1btn1_finished, l1btn1_reset),
+    [TD_L1_BTN1_MS] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, l1btn1_ms_finished, l1btn1_ms_reset),
 };
 #endif
 
 #define L1_BTN1 TD(TD_L1_BTN1)
-#define L1_BTN2 LT(LY_FN,KC_SPC)
+#define L1_BTN1_MS TD(TD_L1_BTN1_MS)
+#define L1_BTN2 LT(LY_SYMBOL,KC_SPC)
 #define L1_BTN3 LCTL_T(KC_TAB)
 
 #define R1_BTN1 RCTL_T(KC_BSPC)
@@ -144,7 +149,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     KC_F1    , KC_F2    , KC_F3    , KC_F4    , KC_F5    ,                            KC_PSCR  , KC_PGUP  , KC_WH_U  , KC_PGDN  , KC_RALT  ,
     C(JP_A)  , C(JP_S)  , C(JP_D)  , C(JP_F)  , C(JP_G)  ,                            KC_HOME  , KC_BTN1  , KC_WH_D  , KC_BTN2  , KC_END   ,
     C(JP_Z)  , C(JP_X)  , C(JP_C)  , C(JP_V)  , KC_APP   ,                            KC_F6    , KC_F7    , KC_F8    , KC_F9    , KC_F10   ,
-    _______  , _______  , _______  , _______  , MO(LY_FN), TG(LY_MOUSE_ST),_______ ,  _______  , _______  , _______  , _______  , _______
+    _______  , _______  , _______  , _______  , KC_SPC   , L1_BTN1_MS,     _______ ,  _______  , _______  , _______  , _______  , _______
   ),
 
   [LY_FN] = LAYOUT_universal(
@@ -165,7 +170,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
 layer_state_t layer_state_set_user(layer_state_t state) {
     uint8_t layer = get_highest_layer(state);
-    // Auto enable scroll mode when the highest layer is 3
+    // Auto enable scroll mode when the highest layer is LY_FN
     keyball_set_scroll_mode(layer == LY_FN);
     return state;
 }
@@ -223,9 +228,10 @@ typedef struct {
 } tap;
 
 enum {
-    SINGLE_TAP = 1,
-    SINGLE_HOLD = 2,
-    DOUBLE_TAP = 3,
+    TD_NONE,
+    SINGLE_TAP,
+    SINGLE_HOLD,
+    DOUBLE_TAP,
 };
 
 int cur_dance(tap_dance_state_t *state) {
@@ -234,7 +240,7 @@ int cur_dance(tap_dance_state_t *state) {
         else return SINGLE_TAP;
     } else if (state->count == 2) {
         return DOUBLE_TAP;
-    } else return 8;
+    } else return TD_NONE;
 }
 
 static tap l1btn1_state;
@@ -242,19 +248,37 @@ static tap l1btn1_state;
 void l1btn1_finished(tap_dance_state_t *state, void *user_data) {
     l1btn1_state.state = cur_dance(state);
     switch (l1btn1_state.state) {
-        case SINGLE_TAP: register_code(JP_MHEN); break;
-        case SINGLE_HOLD: layer_on(LY_SYMBOL); break;
-        case DOUBLE_TAP: register_code(JP_HENK); break;
+        case SINGLE_TAP: register_code16(JP_MHEN); break;
+        case SINGLE_HOLD: layer_on(LY_FN); break;
+        case DOUBLE_TAP: register_code16(JP_HENK); break;
     }
 }
 
 void l1btn1_reset(tap_dance_state_t *state, void *user_data) {
     switch (l1btn1_state.state) {
-        case SINGLE_TAP: unregister_code(JP_MHEN); break;
-        case SINGLE_HOLD: layer_off(LY_SYMBOL); break;
-        case DOUBLE_TAP: unregister_code(JP_HENK); break;
+        case SINGLE_TAP: unregister_code16(JP_MHEN); break;
+        case SINGLE_HOLD: layer_off(LY_FN); break;
+        case DOUBLE_TAP: unregister_code16(JP_HENK); break;
     }
     l1btn1_state.state = 0;
+}
+
+static tap l1btn1_ms_state;
+
+void l1btn1_ms_finished(tap_dance_state_t *state, void *user_data) {
+    l1btn1_ms_state.state = cur_dance(state);
+    switch (l1btn1_ms_state.state) {
+        case SINGLE_TAP: layer_invert(LY_MOUSE_ST);  break;
+        case SINGLE_HOLD: layer_on(LY_FN); break;
+        case DOUBLE_TAP: layer_invert(LY_MOUSE_ST); break;
+    }
+}
+
+void l1btn1_ms_reset(tap_dance_state_t *state, void *user_data) {
+    switch (l1btn1_ms_state.state) {
+        case SINGLE_HOLD: layer_off(LY_FN); break;
+    }
+    l1btn1_ms_state.state = 0;
 }
 #endif
 
