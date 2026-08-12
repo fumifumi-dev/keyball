@@ -15,10 +15,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <stdbool.h>
-#include <stdint.h>
 #include "quantum.h"
-#include "send_string_keycodes.h"
 #ifdef SPLIT_KEYBOARD
 #    include "transactions.h"
 #endif
@@ -34,8 +31,8 @@ const uint8_t SCROLL_DIV_MAX = 7;
 
 #ifdef POINTING_DEVICE_AUTO_MOUSE_ENABLE
 const uint16_t AML_TIMEOUT_MIN = 600;
-const uint16_t AML_TIMEOUT_MAX = 10000;
-const uint16_t AML_TIMEOUT_QU = 200;
+const uint16_t AML_TIMEOUT_MAX = 9800;
+const uint16_t AML_TIMEOUT_QU = 400;
 
 const uint16_t AML_ACTIVE_TIMEOUT_MIN = 1000;
 const uint16_t AML_ACTIVE_TIMEOUT_MAX = 30000;
@@ -398,6 +395,23 @@ static void formt_num(int8_t num) {
     chmat[3] = ZERO + num;
 }
 
+static void formt_num_d3(int16_t num) {
+    char ten = (num >= 100)? ZERO : BC;
+    while (num >= 100) {
+        ten ++;
+        num -= 100;
+    }
+    chmat[1] = ten;
+    ten = (ten > ZERO || num >= 10)? ZERO : BC;
+    while (num >= 10) {
+        ten ++;
+        num -= 10;
+    }
+    chmat[2] = ten;
+    chmat[3] = ZERO + num;
+}
+
+
 static void formt_num_oled(int8_t ch1, int8_t ch2){
     chmat[1] = ch1 ? SLF : BC;
     formt_num(ch1);
@@ -522,14 +536,12 @@ void keyball_oledkit_eeprom(void) {
     if (aml) {
         oled_write_P(AML, false);
         chmat[0] = BC;
-        chmat[1] = BC;
         chmat[4] = 0;
-        formt_num(keyball_get_auto_mouse_timeout() / 10);
+        formt_num_d3(keyball_get_auto_mouse_timeout() / 10);
         oled_write(chmat + 1, false);
         oled_write_P(AML_T, false);
-
         chmat[4] = 0x5C;
-        formt_num(keyball_get_auto_mouse_active_timeout() / 1000);
+        formt_num_d3(keyball_get_auto_mouse_active_timeout() / 1000);
         oled_write(chmat, false);
     } else keyball_oledkit_blankchar(15);
 
@@ -745,23 +757,27 @@ report_mouse_t pointing_device_task_kb(report_mouse_t mouse_report) {
 
 #ifdef POINTING_DEVICE_AUTO_MOUSE_ENABLE
 bool is_mouse_record_kb(uint16_t keycode, keyrecord_t* record) {
-    set_auto_mouse_timeout(
-        IS_MOUSEKEY_BUTTON(keycode) ?
-        keyball_get_auto_mouse_timeout() : keyball_get_auto_mouse_active_timeout()
-    );
     switch (keycode) {
         case SCRL_MO: return true;
     }
     return is_mouse_record_user(keycode, record);
 }
 
+__attribute__((weak)) bool auto_mouse_activation_ly(report_mouse_t mouse_report) {
+    return true;
+}
+
 bool auto_mouse_activation(report_mouse_t mouse_report) {
-    if (get_highest_layer(layer_state) != 0) return false;
-    return mouse_report.x != 0 || mouse_report.y != 0 || mouse_report.h != 0 || mouse_report.v != 0 || mouse_report.buttons;
+    if (!auto_mouse_activation_ly(mouse_report)) return false;
+    if (mouse_report.x != 0 || mouse_report.y != 0 || mouse_report.h != 0 || mouse_report.v != 0)
+        set_auto_mouse_timeout(keyball_get_auto_mouse_active_timeout());
+    else if (mouse_report.buttons)
+        set_auto_mouse_timeout(keyball_get_auto_mouse_timeout());
+    else return false;
+    return true;
 }
 
 layer_state_t layer_state_set_kb(layer_state_t state) {
-    set_auto_mouse_timeout(keyball_get_auto_mouse_active_timeout());
     return layer_state_set_user(state);
 }
 #endif

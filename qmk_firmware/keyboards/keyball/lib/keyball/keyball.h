@@ -292,6 +292,7 @@ void keyball_oledkit_render(bool master, bool left);
 #ifndef AUTO_MOUSE_ACTIVE_TIME
 #   define AUTO_MOUSE_ACTIVE_TIME 10000
 #endif
+bool auto_mouse_activation_ly(report_mouse_t mouse_report);
 uint16_t keyball_get_auto_mouse_timeout(void);
 uint16_t keyball_get_auto_mouse_active_timeout(void);
 void keyball_inc_auto_mouse_timeout(void);

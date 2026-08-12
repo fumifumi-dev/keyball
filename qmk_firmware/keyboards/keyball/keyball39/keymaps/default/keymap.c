@@ -169,11 +169,23 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 // clang-format on
 
 layer_state_t layer_state_set_user(layer_state_t state) {
+#ifdef POINTING_DEVICE_AUTO_MOUSE_ENABLE
+    if(layer_state_cmp(state, LY_SYMBOL) && layer_state_cmp(state, LY_MOUSE)) {
+        state = remove_auto_mouse_layer(state, false);
+    }
+#endif
     uint8_t layer = get_highest_layer(state);
     // Auto enable scroll mode when the highest layer is LY_FN
     keyball_set_scroll_mode(layer == LY_FN);
     return state;
 }
+
+#ifdef POINTING_DEVICE_AUTO_MOUSE_ENABLE
+bool auto_mouse_activation_ly(report_mouse_t mouse_report) {
+    uint8_t layer = get_highest_layer(layer_state);
+    return layer == LY_MAIN || layer == LY_MOUSE;
+}
+#endif
 
 #ifdef COMBO_SHOULD_TRIGGER
 bool combo_should_trigger(uint16_t combo_index, combo_t *combo, uint16_t keycode, keyrecord_t *record) {
