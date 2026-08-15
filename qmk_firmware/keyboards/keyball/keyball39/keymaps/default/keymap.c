@@ -180,6 +180,20 @@ layer_state_t layer_state_set_user(layer_state_t state) {
     return state;
 }
 
+bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+    switch (keycode) {
+        case KC_LGUI:
+            auto_mouse_layer_off();
+
+        case KC_LALT:
+            if (!record->event.pressed) {
+                auto_mouse_layer_off();
+            }
+    }
+    return true;
+}
+
+
 #ifdef POINTING_DEVICE_AUTO_MOUSE_ENABLE
 bool auto_mouse_activation_ly(report_mouse_t mouse_report) {
     uint8_t layer = get_highest_layer(layer_state);
